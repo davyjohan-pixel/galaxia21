@@ -18,9 +18,9 @@ export const AudioPlayer: React.FC = () => {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
         
-        {/* Left: Brand Logo & Title */}
+        {/* Left: Brand Logo & Title (Clean logo without yellow border/shadow) */}
         <div className="flex items-center gap-3 shrink-0">
-          <div className="relative w-11 h-11 rounded-full overflow-hidden border border-yellow-400/60 shrink-0">
+          <div className="relative w-11 h-11 rounded-full overflow-hidden shrink-0">
             <Image
               src="/logo-galaxia21.jpg"
               alt="Galaxia 21"
