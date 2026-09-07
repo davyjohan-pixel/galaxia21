@@ -1,26 +1,53 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #0b0f19;
+  --foreground: #f3f4f6;
+  --primary-yellow: #facc15;
+  --primary-orange: #f97316;
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom equalizer animation */
+@keyframes bar1 {
+  0%, 100% { height: 6px; }
+  50% { height: 24px; }
+}
+@keyframes bar2 {
+  0%, 100% { height: 20px; }
+  50% { height: 8px; }
+}
+@keyframes bar3 {
+  0%, 100% { height: 10px; }
+  50% { height: 28px; }
+}
+@keyframes bar4 {
+  0%, 100% { height: 24px; }
+  50% { height: 12px; }
+}
+
+.animate-bar-1 { animation: bar1 0.8s infinite ease-in-out; }
+.animate-bar-2 { animation: bar2 0.6s infinite ease-in-out 0.15s; }
+.animate-bar-3 { animation: bar3 0.9s infinite ease-in-out 0.3s; }
+.animate-bar-4 { animation: bar4 0.7s infinite ease-in-out 0.45s; }
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0b0f19;
+}
+::-webkit-scrollbar-thumb {
+  background: #1f2937;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #374151;
 }
