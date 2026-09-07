@@ -15,7 +15,8 @@ interface AudioContextType {
   streamUrl: string;
 }
 
-const STREAM_URL = "https://cp.usa8.fastcast4u.com/proxy/galaxia21v2?mp=/1";
+// Correct valid streaming server URL for Galaxia 21 HRNS
+const STREAM_URL = "https://usa8.fastcast4u.com/proxy/galaxia21v2?mp=/1";
 
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
 
@@ -27,10 +28,9 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // Create persistent audio element
+    // Create persistent HTML5 audio element for live radio
     const audio = new Audio();
     audio.preload = "none";
-    audio.crossOrigin = "anonymous";
     audioRef.current = audio;
 
     const handleCanPlay = () => setIsLoading(false);
@@ -40,7 +40,8 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
       setIsPlaying(true);
     };
     const handlePause = () => setIsPlaying(false);
-    const handleError = () => {
+    const handleError = (e: Event) => {
+      console.error("Audio stream error:", e);
       setIsLoading(false);
       setIsPlaying(false);
     };
@@ -66,27 +67,29 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
     if (!audioRef.current) return;
     setIsLoading(true);
 
-    // Refresh stream source to ensure no buffering delay from past live stream
-    audioRef.current.src = `${STREAM_URL}&nocache=${Date.now()}`;
+    // Direct streaming URL without extra crossOrigin restrictions
+    audioRef.current.src = STREAM_URL;
     audioRef.current.volume = isMuted ? 0 : volume;
 
-    audioRef.current
-      .play()
-      .then(() => {
-        setIsPlaying(true);
-        setIsLoading(false);
-      })
-      .catch((err) => {
-        console.error("Audio playback error:", err);
-        setIsPlaying(false);
-        setIsLoading(false);
-      });
+    const playPromise = audioRef.current.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          setIsPlaying(true);
+          setIsLoading(false);
+        })
+        .catch((err) => {
+          console.error("Audio playback play() failed:", err);
+          setIsPlaying(false);
+          setIsLoading(false);
+        });
+    }
   };
 
   const pauseAudio = () => {
     if (!audioRef.current) return;
     audioRef.current.pause();
-    audioRef.current.src = ""; // stop downloading stream bandwidth
+    audioRef.current.src = ""; // release network connection
     setIsPlaying(false);
     setIsLoading(false);
   };
