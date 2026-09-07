@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { MessageCircle, Radio, Menu, X } from "lucide-react";
+import { useAudio } from "@/context/AudioContext";
 
 interface NavbarProps {
   onRequestSong: () => void;
@@ -11,7 +12,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ onRequestSong }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("inicio");
+  const { isPlaying, togglePlay } = useAudio();
 
   return (
     <header className="sticky top-0 z-40 w-full bg-[#0d1117] border-b border-yellow-500/20 shadow-lg">
@@ -38,75 +39,28 @@ export const Navbar: React.FC<NavbarProps> = ({ onRequestSong }) => {
           </div>
         </Link>
 
-        {/* Center Desktop Navigation */}
-        <nav className="hidden lg:flex items-center space-x-7 text-xs font-bold uppercase tracking-wider">
-          <Link
-            href="#inicio"
-            onClick={() => setActiveTab("inicio")}
-            className={`py-2 transition-colors border-b-2 ${
-              activeTab === "inicio"
-                ? "text-yellow-400 border-yellow-400"
-                : "text-slate-300 border-transparent hover:text-yellow-400"
+        {/* Center Desktop Actions */}
+        <div className="hidden md:flex items-center space-x-4">
+          <button
+            onClick={onRequestSong}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md transition-all hover:scale-105"
+          >
+            <MessageCircle className="w-4 h-4" />
+            <span>Pedir Canción / Saludos</span>
+          </button>
+
+          <button
+            onClick={togglePlay}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-black text-xs uppercase tracking-wider transition-all shadow-md ${
+              isPlaying
+                ? "bg-red-600 text-white animate-pulse"
+                : "bg-slate-800 text-white hover:bg-slate-700 border border-yellow-400/30"
             }`}
           >
-            INICIO
-          </Link>
-          <Link
-            href="#nosotros"
-            onClick={() => setActiveTab("nosotros")}
-            className={`py-2 transition-colors border-b-2 ${
-              activeTab === "nosotros"
-                ? "text-yellow-400 border-yellow-400"
-                : "text-slate-300 border-transparent hover:text-yellow-400"
-            }`}
-          >
-            NOSOTROS
-          </Link>
-          <Link
-            href="#programacion"
-            onClick={() => setActiveTab("programacion")}
-            className={`py-2 transition-colors border-b-2 ${
-              activeTab === "programacion"
-                ? "text-yellow-400 border-yellow-400"
-                : "text-slate-300 border-transparent hover:text-yellow-400"
-            }`}
-          >
-            PROGRAMACIÓN
-          </Link>
-          <Link
-            href="#noticias"
-            onClick={() => setActiveTab("noticias")}
-            className={`py-2 transition-colors border-b-2 ${
-              activeTab === "noticias"
-                ? "text-yellow-400 border-yellow-400"
-                : "text-slate-300 border-transparent hover:text-yellow-400"
-            }`}
-          >
-            NOTICIAS
-          </Link>
-          <Link
-            href="#galeria"
-            onClick={() => setActiveTab("galeria")}
-            className={`py-2 transition-colors border-b-2 ${
-              activeTab === "galeria"
-                ? "text-yellow-400 border-yellow-400"
-                : "text-slate-300 border-transparent hover:text-yellow-400"
-            }`}
-          >
-            GALERÍA
-          </Link>
-          <Link
-            href="#contacto"
-            onClick={() => setActiveTab("contacto")}
-            className={`py-2 transition-colors border-b-2 ${
-              activeTab === "contacto"
-                ? "text-yellow-400 border-yellow-400"
-                : "text-slate-300 border-transparent hover:text-yellow-400"
-            }`}
-          >
-            CONTACTO
-          </Link>
-        </nav>
+            <Radio className="w-4 h-4 text-yellow-400" />
+            <span>{isPlaying ? "EN VIVO (SONANDO)" : "ESCUCHAR EN VIVO"}</span>
+          </button>
+        </div>
 
         {/* Right Social Icons */}
         <div className="hidden lg:flex items-center space-x-4">
@@ -155,7 +109,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onRequestSong }) => {
         </div>
 
         {/* Mobile menu button */}
-        <div className="flex lg:hidden items-center">
+        <div className="flex md:hidden items-center">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="p-2 text-slate-300 hover:text-yellow-400"
@@ -167,42 +121,17 @@ export const Navbar: React.FC<NavbarProps> = ({ onRequestSong }) => {
 
       {/* Mobile Menu dropdown */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-[#0b0f19] border-b border-slate-800 px-4 pt-2 pb-6 space-y-3">
-          <Link
-            href="#inicio"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block text-slate-300 hover:text-yellow-400 py-2 text-sm font-bold uppercase"
+        <div className="md:hidden bg-[#0b0f19] border-b border-slate-800 px-4 pt-2 pb-6 space-y-3 text-center">
+          <button
+            onClick={() => {
+              setMobileMenuOpen(false);
+              onRequestSong();
+            }}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-full bg-yellow-400 text-slate-950 font-black text-xs uppercase"
           >
-            INICIO
-          </Link>
-          <Link
-            href="#nosotros"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block text-slate-300 hover:text-yellow-400 py-2 text-sm font-bold uppercase"
-          >
-            NOSOTROS
-          </Link>
-          <Link
-            href="#programacion"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block text-slate-300 hover:text-yellow-400 py-2 text-sm font-bold uppercase"
-          >
-            PROGRAMACIÓN
-          </Link>
-          <Link
-            href="#noticias"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block text-slate-300 hover:text-yellow-400 py-2 text-sm font-bold uppercase"
-          >
-            NOTICIAS
-          </Link>
-          <Link
-            href="#contacto"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block text-slate-300 hover:text-yellow-400 py-2 text-sm font-bold uppercase"
-          >
-            CONTACTO
-          </Link>
+            <MessageCircle className="w-4 h-4" />
+            <span>Pedir Canción / Saludos</span>
+          </button>
         </div>
       )}
     </header>

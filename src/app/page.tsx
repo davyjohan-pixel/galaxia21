@@ -3,35 +3,21 @@
 import React, { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { HeroSection } from "@/components/HeroSection";
-import { ScheduleSection } from "@/components/ScheduleSection";
-import { AboutSection } from "@/components/AboutSection";
-import { CoverageSection } from "@/components/CoverageSection";
 import { SongRequestModal } from "@/components/SongRequestModal";
-import { Footer } from "@/components/Footer";
 import { AudioPlayer } from "@/components/AudioPlayer";
 
 export default function Home() {
   const [requestModalOpen, setRequestModalOpen] = useState(false);
 
   return (
-    <main className="min-h-screen bg-[#0b0f19] flex flex-col relative">
+    <main className="min-h-screen bg-[#0b0f19] flex flex-col justify-between relative pb-24">
       {/* Top Navbar */}
       <Navbar onRequestSong={() => setRequestModalOpen(true)} />
 
-      {/* Hero Banner Section (Image 2 Banner) */}
-      <HeroSection />
-
-      {/* Nuestros Programas Section (Image 1 Cards) */}
-      <ScheduleSection />
-
-      {/* ¿Quiénes Somos? & Síguenos Section (Image 1 Bottom Cards) */}
-      <AboutSection onRequestSong={() => setRequestModalOpen(true)} />
-
-      {/* Coverage Section */}
-      <CoverageSection />
-
-      {/* Footer */}
-      <Footer />
+      {/* Clean Full Banner Section */}
+      <div className="flex-1 flex items-center justify-center py-6">
+        <HeroSection />
+      </div>
 
       {/* Song Request Modal */}
       <SongRequestModal
@@ -39,7 +25,7 @@ export default function Home() {
         onClose={() => setRequestModalOpen(false)}
       />
 
-      {/* Sticky Bottom Audio Player (Image 1 Player) */}
+      {/* Sticky Bottom Audio Player */}
       <AudioPlayer />
     </main>
   );
