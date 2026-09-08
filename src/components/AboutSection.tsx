@@ -38,9 +38,6 @@ export const AboutSection: React.FC = () => {
               <p>
                 Con más de 30 años de trayectoria ininterrumpida, Radio Galaxia 21 es la emisora referente del departamento de Lempira. A través de la frecuencia 95.1 FM, hemos consolidado un espacio de comunicación que trasciende el entretenimiento para convertirse en un verdadero pilar institucional y social de nuestra comunidad.
               </p>
-              <p>
-                Nuestra misión es clara: educar, informar y generar opinión pública con absoluto profesionalismo y responsabilidad. Trabajamos diariamente para ofrecer una programación equilibrada que fortalezca la identidad local, respalde el desarrollo comercial de la región y fomente un debate constructivo. Más que una estación de radio, somos la voz y el vínculo de confianza que acompaña y representa a la gente de Lempira.
-              </p>
             </div>
           </div>
           
