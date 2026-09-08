@@ -20,29 +20,27 @@ export const AboutSection: React.FC = () => {
              />
           </div>
           
-          {/* Gradient Overlay (White on left fading into transparent) */}
-          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-transparent sm:via-white/90 sm:to-white/10" />
+          {/* Gradient Overlay (Solid white on left fading sharply to transparent on right) */}
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: "linear-gradient(to right, rgba(255,255,255,1) 0%, rgba(255,255,255,0.95) 45%, rgba(255,255,255,0) 100%)"
+            }}
+          />
           
           {/* Content */}
-          <div className="relative z-10 p-6 sm:p-10 lg:p-12 max-w-2xl h-full flex flex-col justify-center">
+          <div className="relative z-10 p-6 sm:p-10 lg:p-12 max-w-xl h-full flex flex-col justify-center">
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 uppercase mb-4 sm:mb-6 tracking-tight">
               ¿Quiénes Somos?
             </h2>
             
-            <div className="space-y-4 text-slate-600 font-medium text-sm sm:text-base leading-relaxed">
+            <div className="space-y-4 text-slate-700 font-medium text-sm sm:text-base leading-relaxed">
               <p>
                 Con más de 30 años de trayectoria ininterrumpida, Radio Galaxia 21 es la emisora referente del departamento de Lempira. A través de la frecuencia 95.1 FM, hemos consolidado un espacio de comunicación que trasciende el entretenimiento para convertirse en un verdadero pilar institucional y social de nuestra comunidad.
               </p>
               <p>
                 Nuestra misión es clara: educar, informar y generar opinión pública con absoluto profesionalismo y responsabilidad. Trabajamos diariamente para ofrecer una programación equilibrada que fortalezca la identidad local, respalde el desarrollo comercial de la región y fomente un debate constructivo. Más que una estación de radio, somos la voz y el vínculo de confianza que acompaña y representa a la gente de Lempira.
               </p>
-            </div>
-
-            <div className="mt-8">
-              <button className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black uppercase tracking-wider text-xs px-6 py-3.5 rounded-full flex items-center gap-2 transition-transform hover:scale-105 shadow-lg hover:shadow-xl active:scale-95">
-                Conoce Más 
-                <ChevronRight className="w-4 h-4 stroke-[3]" />
-              </button>
             </div>
           </div>
           
