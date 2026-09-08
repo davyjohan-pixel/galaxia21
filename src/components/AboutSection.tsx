@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { ChevronRight } from "lucide-react";
 
 export const AboutSection: React.FC = () => {
   return (
@@ -9,74 +8,59 @@ export const AboutSection: React.FC = () => {
       <div className="flex flex-col lg:flex-row gap-6">
         
         {/* About Card */}
-        <div className="flex-1 relative rounded-2xl overflow-hidden bg-white shadow-xl min-h-[400px]">
-          {/* Background Image */}
-          <div className="absolute inset-0">
+        <div className="flex-1 relative rounded-2xl overflow-hidden bg-white shadow-xl min-h-[400px] flex">
+          
+          {/* Background Image Container (Right side only) */}
+          <div 
+            className="absolute inset-y-0 right-0 w-full md:w-[65%] h-full pointer-events-none"
+            style={{
+              WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 30%, black 100%)",
+              maskImage: "linear-gradient(to right, transparent 0%, black 30%, black 100%)"
+            }}
+          >
              <img 
                src="/about-bg.jpg" 
                alt="Gracias, Lempira"
-               className="w-full h-full object-cover object-[70%_center]" 
+               className="w-full h-full object-cover object-[75%_center]" 
                decoding="async"
              />
           </div>
           
-          {/* Gradient Overlay (Solid white on left fading sharply to transparent on right) */}
-          <div 
-            className="absolute inset-0"
-            style={{
-              background: "linear-gradient(to right, rgba(255,255,255,1) 0%, rgba(255,255,255,0.95) 45%, rgba(255,255,255,0) 100%)"
-            }}
-          />
-          
           {/* Content */}
-          <div className="relative z-10 p-6 sm:p-10 lg:p-12 max-w-xl h-full flex flex-col justify-center">
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 uppercase mb-4 sm:mb-6 tracking-tight">
+          <div className="relative z-10 p-6 sm:p-10 lg:p-12 w-full md:w-[60%] h-full flex flex-col justify-center">
+            <h2 className="text-3xl sm:text-4xl font-black text-[#0f172a] uppercase mb-4 sm:mb-6 tracking-tight drop-shadow-sm">
               ¿Quiénes Somos?
             </h2>
             
-            <div className="space-y-4 text-slate-700 font-medium text-sm sm:text-base leading-relaxed">
+            <div className="text-[#334155] font-medium text-sm sm:text-base leading-relaxed">
               <p>
                 Con más de 30 años de trayectoria ininterrumpida, Radio Galaxia 21 es la emisora referente del departamento de Lempira. A través de la frecuencia 95.1 FM, hemos consolidado un espacio de comunicación que trasciende el entretenimiento para convertirse en un verdadero pilar institucional y social de nuestra comunidad.
               </p>
             </div>
           </div>
-          
-          {/* Stylized text overlay on bottom right (mockup style) */}
-          <div className="absolute bottom-6 right-8 hidden md:block transform -rotate-6 select-none pointer-events-none">
-             <span 
-               className="text-white font-bold text-4xl drop-shadow-xl" 
-               style={{ 
-                 fontFamily: "'Brush Script MT', 'Caveat', cursive",
-                 textShadow: "2px 4px 10px rgba(0,0,0,0.6)"
-               }}
-             >
-               Gracias,<br/>Lempira
-             </span>
-             <div className="w-32 h-1 bg-yellow-400 rounded-full mt-1 ml-4 shadow-lg"></div>
-          </div>
         </div>
 
         {/* Síguenos Card */}
-        <div className="w-full lg:w-80 shrink-0 rounded-2xl bg-[#11151c] shadow-2xl p-8 flex flex-col justify-center border border-slate-800">
+        <div className="w-full lg:w-[340px] shrink-0 rounded-2xl bg-[#0f141e] shadow-2xl p-8 flex flex-col justify-center border border-slate-800/60">
            
-           {/* Antenna Icon */}
+           {/* Custom Antenna Icon matching mockup */}
            <div className="mb-5">
-             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-yellow-400 stroke-2">
+             <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#eab308" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                <path d="M12 2v20" />
-               <path d="M5 10a10 10 0 0 1 14 0" />
-               <path d="M8 14a5 5 0 0 1 8 0" />
-               <circle cx="12" cy="7" r="2" fill="currentColor" />
+               <path d="M4 10a11 11 0 0 1 16 0" />
+               <path d="M7 13a7.5 7.5 0 0 1 10 0" />
+               <circle cx="12" cy="7" r="1.5" fill="#eab308" />
              </svg>
            </div>
            
-           <h3 className="text-xl sm:text-2xl font-black text-white uppercase tracking-wide mb-2">
+           <h3 className="text-2xl font-black text-white uppercase tracking-wide mb-3">
              Síguenos
            </h3>
            <p className="text-slate-400 text-sm font-medium mb-8 leading-relaxed">
              No te pierdas de nada, síguenos en nuestras redes sociales.
            </p>
            
-           <div className="flex items-center gap-3">
+           <div className="flex items-center gap-4">
              {/* Facebook */}
              <a href="#" className="w-10 h-10 rounded-full bg-[#1877F2] flex items-center justify-center text-white hover:-translate-y-1 transition-transform shadow-lg">
                 <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
@@ -86,7 +70,7 @@ export const AboutSection: React.FC = () => {
              
              {/* Instagram */}
              <a href="#" className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#FFDC80] via-[#F56040] to-[#C13584] flex items-center justify-center text-white hover:-translate-y-1 transition-transform shadow-lg">
-                <svg className="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="w-5 h-5 fill-none stroke-current stroke-[2.2]" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
                   <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
                   <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
