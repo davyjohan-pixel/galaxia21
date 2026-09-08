@@ -8,16 +8,17 @@ export const HeroSection: React.FC = () => {
   const { isPlaying, togglePlay, isLoading } = useAudio();
 
   return (
-    <section id="inicio" className="w-full flex justify-center items-center px-0 sm:px-4">
-      {/* Banner Container maintaining exact image quality without any Next.js re-compression */}
-      <div className="relative w-full max-w-7xl mx-auto sm:rounded-b-2xl overflow-hidden shadow-2xl bg-[#0d1117]">
+    <section id="inicio" className="w-full">
+      {/* Banner Container — full width, no compression, no scaling artifacts */}
+      <div className="relative w-full overflow-hidden bg-[#0d1117]">
         
-        {/* Raw Lossless Banner Image (Image 2) */}
+        {/* Raw Lossless Banner Image */}
         <img
           src="/banner-galaxia21.png"
           alt="Radio Galaxia 21 - La Radio de Lempira"
-          className="w-full h-auto block object-contain select-none"
-          style={{ imageRendering: "crisp-edges" }}
+          className="w-full h-auto block select-none"
+          decoding="async"
+          fetchPriority="high"
         />
 
         {/* Hotspot click area positioned over the yellow button area on the bottom right of the banner image */}
