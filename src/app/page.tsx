@@ -5,6 +5,7 @@ import { Navbar } from "@/components/Navbar";
 import { HeroSection } from "@/components/HeroSection";
 import { SongRequestModal } from "@/components/SongRequestModal";
 import { AudioPlayer } from "@/components/AudioPlayer";
+import { AboutSection } from "@/components/AboutSection";
 
 export default function Home() {
   const [requestModalOpen, setRequestModalOpen] = useState(false);
@@ -19,8 +20,10 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Main Content Spacer (if any future content is added) */}
-      <div className="flex-1"></div>
+      {/* Main Content Area */}
+      <div className="flex-1 w-full bg-[#f4f6f8]">
+        <AboutSection />
+      </div>
 
       {/* Song Request Modal */}
       <SongRequestModal
