@@ -40,18 +40,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onRequestSong }) => {
           <Link href="#inicio" className="text-yellow-400 border-b-2 border-yellow-400 py-2">
             INICIO
           </Link>
-          <Link href="#nosotros" className="text-slate-300 hover:text-yellow-400 transition-colors py-2">
-            NOSOTROS
-          </Link>
-          <Link href="#programacion" className="text-slate-300 hover:text-yellow-400 transition-colors py-2">
-            PROGRAMACIÓN
-          </Link>
-          <Link href="#noticias" className="text-slate-300 hover:text-yellow-400 transition-colors py-2">
-            NOTICIAS
-          </Link>
-          <Link href="#galeria" className="text-slate-300 hover:text-yellow-400 transition-colors py-2">
-            GALERÍA
-          </Link>
           <Link href="#contacto" className="text-slate-300 hover:text-yellow-400 transition-colors py-2">
             CONTACTO
           </Link>
