@@ -14,7 +14,7 @@ export default function Home() {
       {/* Unified Header (Navbar + Banner) */}
       <header className="w-full bg-[#0d1117] shadow-2xl z-40">
         <Navbar onRequestSong={() => setRequestModalOpen(true)} />
-        <div className="w-full pb-4 sm:pb-6">
+        <div className="w-full">
           <HeroSection />
         </div>
       </header>
