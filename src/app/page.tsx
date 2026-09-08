@@ -11,13 +11,16 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#0b0f19] flex flex-col justify-between relative pb-24">
-      {/* Top Navbar */}
-      <Navbar onRequestSong={() => setRequestModalOpen(true)} />
+      {/* Unified Header (Navbar + Banner) */}
+      <header className="w-full bg-[#0d1117] shadow-2xl z-40">
+        <Navbar onRequestSong={() => setRequestModalOpen(true)} />
+        <div className="w-full pb-4 sm:pb-6">
+          <HeroSection />
+        </div>
+      </header>
 
-      {/* Clean Full Banner Section */}
-      <div className="flex-1 flex items-center justify-center py-6">
-        <HeroSection />
-      </div>
+      {/* Main Content Spacer (if any future content is added) */}
+      <div className="flex-1"></div>
 
       {/* Song Request Modal */}
       <SongRequestModal

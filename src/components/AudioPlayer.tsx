@@ -12,7 +12,7 @@ export const AudioPlayer: React.FC = () => {
   return (
     <aside
       aria-label="Reproductor flotante de Galaxia 21"
-      className={`fixed bottom-0 left-0 right-0 z-50 bg-[#0B0F19] border-t border-slate-800 shadow-2xl transition-all duration-300 ${
+      className={`fixed bottom-0 left-0 right-0 z-50 bg-[#0B0F19]/60 backdrop-blur-md border-t border-slate-800/50 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-all duration-300 ${
         minimized ? "translate-y-16" : "translate-y-0"
       }`}
     >
@@ -26,6 +26,7 @@ export const AudioPlayer: React.FC = () => {
               alt="Galaxia 21"
               fill
               className="object-cover"
+              unoptimized
             />
           </div>
 

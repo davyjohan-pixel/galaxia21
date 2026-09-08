@@ -10,25 +10,26 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ onRequestSong }) => {
   return (
-    <header className="sticky top-0 z-40 w-full bg-[#0d1117] border-b border-slate-800 shadow-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+    <header className="w-full bg-[#0d1117] border-b-0">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
         
         {/* Brand Logo & Name (Clean without yellow shadow/border) */}
-        <Link href="/" className="flex items-center space-x-3 group">
-          <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0">
+        <Link href="/" className="flex items-center space-x-4 group">
+          <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden shrink-0 shadow-lg">
             <Image
               src="/logo-galaxia21.jpg"
               alt="Galaxia 21 HRNS"
               fill
               className="object-cover"
               priority
+              unoptimized
             />
           </div>
           <div className="flex flex-col">
-            <span className="font-black text-xl tracking-tight text-white leading-none">
+            <span className="font-black text-2xl sm:text-3xl tracking-tight text-white leading-none">
               GALAXIA <span className="text-yellow-400">21</span>
             </span>
-            <span className="text-[10px] font-bold text-yellow-400 tracking-wider uppercase mt-1">
+            <span className="text-xs sm:text-sm font-bold text-yellow-400 tracking-wider uppercase mt-1">
               LA RADIO DE LEMPIRA
             </span>
           </div>

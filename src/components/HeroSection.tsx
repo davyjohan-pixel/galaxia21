@@ -8,9 +8,9 @@ export const HeroSection: React.FC = () => {
   const { isPlaying, togglePlay, isLoading } = useAudio();
 
   return (
-    <section id="inicio" className="w-full bg-[#0b0f19] flex justify-center items-center py-4 sm:py-6 px-2 sm:px-4">
+    <section id="inicio" className="w-full flex justify-center items-center px-0 sm:px-4">
       {/* Banner Container maintaining exact image quality without any Next.js re-compression */}
-      <div className="relative w-full max-w-7xl mx-auto rounded-2xl overflow-hidden shadow-2xl bg-slate-950">
+      <div className="relative w-full max-w-7xl mx-auto sm:rounded-b-2xl overflow-hidden shadow-2xl bg-[#0d1117]">
         
         {/* Raw Lossless Banner Image (Image 2) */}
         <img
