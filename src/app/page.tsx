@@ -28,7 +28,7 @@ export default function Home() {
       </div>
 
       {/* Panoramic "Gracias, Lempira" Banner & Curved Dark Navy Footer */}
-      <FooterSection />
+      <FooterSection onOpenContact={() => setRequestModalOpen(true)} />
 
       {/* Contact / Song Request Modal */}
       <SongRequestModal

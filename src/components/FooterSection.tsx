@@ -3,7 +3,11 @@
 import React from "react";
 import { RadioTowerIcon } from "./Navbar";
 
-export const FooterSection: React.FC = () => {
+interface FooterSectionProps {
+  onOpenContact?: () => void;
+}
+
+export const FooterSection: React.FC<FooterSectionProps> = ({ onOpenContact }) => {
   return (
     <footer id="contacto" className="w-full relative overflow-hidden mt-2 sm:mt-4">
       {/* Panoramic Mountain Banner Section */}
@@ -117,8 +121,11 @@ export const FooterSection: React.FC = () => {
             </div>
           </div>
 
-          {/* Column 2: Location Pin (Gracias, Lempira Honduras) */}
-          <div className="md:col-span-4 flex items-center justify-center md:border-x border-slate-700/70 py-3.5 md:py-2 px-4 gap-3">
+          {/* Column 2: Location Pin (Gracias, Lempira Honduras) & Contact Trigger */}
+          <button
+            onClick={onOpenContact}
+            className="md:col-span-4 flex items-center justify-center md:border-x border-slate-700/70 py-3.5 md:py-2 px-4 gap-3 cursor-pointer hover:bg-white/5 transition-colors rounded-xl text-left"
+          >
             <div className="text-[#facc15] shrink-0">
               <svg
                 viewBox="0 0 24 24"
@@ -136,11 +143,11 @@ export const FooterSection: React.FC = () => {
               <span className="font-bold text-xs sm:text-sm text-white">
                 Gracias, Lempira
               </span>
-              <span className="text-xs text-slate-300 font-normal mt-0.5">
-                Honduras
+              <span className="text-[11px] sm:text-xs text-yellow-400 font-semibold mt-0.5">
+                Ver Datos de Contacto →
               </span>
             </div>
-          </div>
+          </button>
 
           {/* Column 3: Antenna Icon + "La radio que nos une" */}
           <div className="md:col-span-3 flex items-center justify-center md:justify-end gap-3 pt-3.5 md:pt-0">
