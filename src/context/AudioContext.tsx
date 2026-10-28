@@ -1,6 +1,13 @@
 "use client";
 
-import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+} from "react";
 
 interface AudioContextType {
   isPlaying: boolean;
@@ -25,7 +32,14 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(0.9);
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const volumeRef = useRef(0.9);
+  const isMutedRef = useRef(false);
+
+  // Keep refs in sync with state
+  volumeRef.current = volume;
+  isMutedRef.current = isMuted;
 
   const updateMediaSessionMetadata = useCallback(() => {
     if (typeof window === "undefined" || !("mediaSession" in navigator)) return;
@@ -77,7 +91,11 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Direct streaming URL without extra crossOrigin restrictions
     audioRef.current.src = STREAM_URL;
-    audioRef.current.volume = isMuted ? 0 : volume;
+    try {
+      audioRef.current.volume = isMutedRef.current ? 0 : volumeRef.current;
+    } catch {
+      // Ignore mobile volume restrictions
+    }
 
     const playPromise = audioRef.current.play();
     if (playPromise !== undefined) {
@@ -96,10 +114,63 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
           setIsLoading(false);
         });
     }
-  }, [isMuted, volume, updateMediaSessionMetadata]);
+  }, [updateMediaSessionMetadata]);
+
+  const togglePlay = useCallback(() => {
+    if (isPlaying) {
+      pauseAudio();
+    } else {
+      playAudio();
+    }
+  }, [isPlaying, pauseAudio, playAudio]);
+
+  const handleVolumeChange = useCallback((newVol: number) => {
+    const clamped = Math.max(0, Math.min(1, newVol));
+    setVolume(clamped);
+    volumeRef.current = clamped;
+
+    if (audioRef.current) {
+      try {
+        audioRef.current.volume = isMutedRef.current ? 0 : clamped;
+      } catch {
+        // Some mobile browsers restrict setting volume programmatically
+      }
+    }
+
+    if (clamped > 0 && isMutedRef.current) {
+      setIsMuted(false);
+      isMutedRef.current = false;
+      if (audioRef.current) {
+        try {
+          audioRef.current.volume = clamped;
+        } catch {
+          // Ignore
+        }
+      }
+    }
+  }, []);
+
+  const toggleMute = useCallback(() => {
+    const newMuted = !isMutedRef.current;
+    setIsMuted(newMuted);
+    isMutedRef.current = newMuted;
+    if (audioRef.current) {
+      try {
+        audioRef.current.volume = newMuted ? 0 : volumeRef.current;
+      } catch {
+        // Ignore
+      }
+    }
+  }, []);
+
+  // Store action handlers in refs to avoid recreating the audio element
+  const playAudioRef = useRef(playAudio);
+  const pauseAudioRef = useRef(pauseAudio);
+  playAudioRef.current = playAudio;
+  pauseAudioRef.current = pauseAudio;
 
   useEffect(() => {
-    // Create persistent HTML5 audio element for live radio
+    // Create persistent HTML5 audio element for live radio - ONLY ONCE
     const audio = new Audio();
     audio.preload = "none";
     audioRef.current = audio;
@@ -136,9 +207,9 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
     updateMediaSessionMetadata();
     if ("mediaSession" in navigator) {
       try {
-        navigator.mediaSession.setActionHandler("play", () => playAudio());
-        navigator.mediaSession.setActionHandler("pause", () => pauseAudio());
-        navigator.mediaSession.setActionHandler("stop", () => pauseAudio());
+        navigator.mediaSession.setActionHandler("play", () => playAudioRef.current());
+        navigator.mediaSession.setActionHandler("pause", () => pauseAudioRef.current());
+        navigator.mediaSession.setActionHandler("stop", () => pauseAudioRef.current());
       } catch {
         // Ignore unsupported action handlers
       }
@@ -153,33 +224,7 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
       audio.pause();
       audio.src = "";
     };
-  }, [playAudio, pauseAudio, updateMediaSessionMetadata]);
-
-  const togglePlay = () => {
-    if (isPlaying) {
-      pauseAudio();
-    } else {
-      playAudio();
-    }
-  };
-
-  const handleVolumeChange = (newVol: number) => {
-    setVolume(newVol);
-    if (audioRef.current) {
-      audioRef.current.volume = isMuted ? 0 : newVol;
-    }
-    if (newVol > 0 && isMuted) {
-      setIsMuted(false);
-    }
-  };
-
-  const toggleMute = () => {
-    const newMuted = !isMuted;
-    setIsMuted(newMuted);
-    if (audioRef.current) {
-      audioRef.current.volume = newMuted ? 0 : volume;
-    }
-  };
+  }, [updateMediaSessionMetadata]);
 
   return (
     <AudioContext.Provider
