@@ -33,37 +33,29 @@ export const Navbar: React.FC<NavbarProps> = ({ onRequestSong }) => {
   return (
     <header className="w-full bg-white relative z-30 shadow-[0_2px_15px_rgba(0,0,0,0.06)]">
       <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-24 flex items-center justify-between gap-2">
-        {/* Left: Overlapping Brand Emblem + Title + 95.1 FM Pill */}
-        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+        {/* Left: Brand Emblem (Full size, transparent background) + Title */}
+        <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
           <Link
             href="#inicio"
-            className="relative -mb-4 sm:-mb-8 w-14 h-14 sm:w-24 sm:h-24 rounded-full bg-white p-1 sm:p-1.5 shadow-[0_6px_20px_rgba(0,0,0,0.18)] shrink-0 z-40 transition-transform hover:scale-105"
+            className="relative -mb-4 sm:-mb-8 w-16 h-16 sm:w-24 sm:h-24 rounded-full shrink-0 z-40 transition-transform hover:scale-105 drop-shadow-[0_6px_16px_rgba(0,0,0,0.22)]"
           >
             <img
               src="/logo-galaxia-hd.png"
               alt="Galaxia 21 HRNS - Gracias, Lempira"
-              className="w-full h-full object-contain rounded-full select-none"
+              className="w-full h-full object-contain scale-110 select-none"
               decoding="async"
               fetchPriority="high"
             />
           </Link>
 
-          <div className="flex items-center gap-1.5 sm:gap-3.5 min-w-0">
-            <Link href="#inicio" className="flex flex-col truncate">
-              <span className="font-black text-base sm:text-3xl tracking-tight text-[#081c38] leading-none truncate">
-                GALAXIA 21
-              </span>
-              <span className="text-[10px] sm:text-sm font-medium text-[#1e3a5f] tracking-normal mt-0.5 truncate">
-                La Radio de Lempira
-              </span>
-            </Link>
-
-            {/* 95.1 FM Yellow Pill Badge */}
-            <div className="inline-flex items-center gap-1 sm:gap-1.5 bg-[#facc15] text-[#081c38] px-2 sm:px-3.5 py-0.5 sm:py-1.5 rounded-full font-extrabold text-[10px] sm:text-sm shadow-xs shrink-0">
-              <RadioTowerIcon className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span>95.1 FM</span>
-            </div>
-          </div>
+          <Link href="#inicio" className="flex flex-col min-w-0">
+            <span className="font-black text-lg sm:text-3xl tracking-tight text-[#081c38] leading-none">
+              GALAXIA 21
+            </span>
+            <span className="text-[11px] sm:text-sm font-medium text-[#1e3a5f] tracking-normal mt-0.5">
+              La Radio de Lempira
+            </span>
+          </Link>
         </div>
 
         {/* Right: Navigation Links & Search Icon */}

@@ -92,13 +92,13 @@ export const FooterSection: React.FC = () => {
       {/* Deep Navy Footer Body */}
       <div className="w-full bg-[#061833] text-white pt-4 pb-7 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-12 items-center divide-y divide-slate-800/80 md:divide-y-0 gap-4">
-          {/* Column 1: Logo + Station Name + 95.1 FM Pill */}
+          {/* Column 1: Logo (Transparent background, full circle size) + Station Name + 95.1 FM Pill */}
           <div className="md:col-span-5 flex items-center justify-center md:justify-start gap-3.5 sm:gap-4 pb-4 md:pb-0">
-            <div className="w-16 h-16 sm:w-22 sm:h-22 rounded-full bg-white p-1 shrink-0 shadow-lg">
+            <div className="w-18 h-18 sm:w-24 sm:h-24 shrink-0 drop-shadow-[0_6px_16px_rgba(0,0,0,0.35)]">
               <img
                 src="/logo-galaxia-hd.png"
                 alt="Galaxia 21 HRNS"
-                className="w-full h-full object-contain rounded-full select-none"
+                className="w-full h-full object-contain scale-110 select-none"
                 decoding="async"
               />
             </div>
