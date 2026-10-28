@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useRef, useEffect } from "react";
+import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from "react";
 
 interface AudioContextType {
   isPlaying: boolean;
@@ -27,6 +27,77 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
   const [volume, setVolume] = useState(0.9);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  const updateMediaSessionMetadata = useCallback(() => {
+    if (typeof window === "undefined" || !("mediaSession" in navigator)) return;
+
+    try {
+      const origin = window.location.origin;
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: "Galaxia 21 — 95.1 FM En Vivo",
+        artist: "La Radio de Lempira",
+        album: "Gracias, Lempira • HRNS",
+        artwork: [
+          {
+            src: `${origin}/icon-192.png`,
+            sizes: "192x192",
+            type: "image/png",
+          },
+          {
+            src: `${origin}/icon-512.png`,
+            sizes: "512x512",
+            type: "image/png",
+          },
+          {
+            src: `${origin}/logo-galaxia-hd.png`,
+            sizes: "1024x1024",
+            type: "image/png",
+          },
+        ],
+      });
+    } catch (e) {
+      console.warn("MediaSession metadata not supported:", e);
+    }
+  }, []);
+
+  const pauseAudio = useCallback(() => {
+    if (!audioRef.current) return;
+    audioRef.current.pause();
+    audioRef.current.src = ""; // release network connection
+    setIsPlaying(false);
+    setIsLoading(false);
+    if (typeof window !== "undefined" && "mediaSession" in navigator) {
+      navigator.mediaSession.playbackState = "paused";
+    }
+  }, []);
+
+  const playAudio = useCallback(() => {
+    if (!audioRef.current) return;
+    setIsLoading(true);
+    updateMediaSessionMetadata();
+
+    // Direct streaming URL without extra crossOrigin restrictions
+    audioRef.current.src = STREAM_URL;
+    audioRef.current.volume = isMuted ? 0 : volume;
+
+    const playPromise = audioRef.current.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          setIsPlaying(true);
+          setIsLoading(false);
+          updateMediaSessionMetadata();
+          if (typeof window !== "undefined" && "mediaSession" in navigator) {
+            navigator.mediaSession.playbackState = "playing";
+          }
+        })
+        .catch((err) => {
+          console.error("Audio playback play() failed:", err);
+          setIsPlaying(false);
+          setIsLoading(false);
+        });
+    }
+  }, [isMuted, volume, updateMediaSessionMetadata]);
+
   useEffect(() => {
     // Create persistent HTML5 audio element for live radio
     const audio = new Audio();
@@ -38,8 +109,17 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
     const handlePlaying = () => {
       setIsLoading(false);
       setIsPlaying(true);
+      updateMediaSessionMetadata();
+      if ("mediaSession" in navigator) {
+        navigator.mediaSession.playbackState = "playing";
+      }
     };
-    const handlePause = () => setIsPlaying(false);
+    const handlePause = () => {
+      setIsPlaying(false);
+      if ("mediaSession" in navigator) {
+        navigator.mediaSession.playbackState = "paused";
+      }
+    };
     const handleError = (e: Event) => {
       console.error("Audio stream error:", e);
       setIsLoading(false);
@@ -52,6 +132,18 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
     audio.addEventListener("pause", handlePause);
     audio.addEventListener("error", handleError);
 
+    // Initialize lock screen MediaSession metadata & handlers
+    updateMediaSessionMetadata();
+    if ("mediaSession" in navigator) {
+      try {
+        navigator.mediaSession.setActionHandler("play", () => playAudio());
+        navigator.mediaSession.setActionHandler("pause", () => pauseAudio());
+        navigator.mediaSession.setActionHandler("stop", () => pauseAudio());
+      } catch {
+        // Ignore unsupported action handlers
+      }
+    }
+
     return () => {
       audio.removeEventListener("canplay", handleCanPlay);
       audio.removeEventListener("waiting", handleWaiting);
@@ -61,38 +153,7 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
       audio.pause();
       audio.src = "";
     };
-  }, []);
-
-  const playAudio = () => {
-    if (!audioRef.current) return;
-    setIsLoading(true);
-
-    // Direct streaming URL without extra crossOrigin restrictions
-    audioRef.current.src = STREAM_URL;
-    audioRef.current.volume = isMuted ? 0 : volume;
-
-    const playPromise = audioRef.current.play();
-    if (playPromise !== undefined) {
-      playPromise
-        .then(() => {
-          setIsPlaying(true);
-          setIsLoading(false);
-        })
-        .catch((err) => {
-          console.error("Audio playback play() failed:", err);
-          setIsPlaying(false);
-          setIsLoading(false);
-        });
-    }
-  };
-
-  const pauseAudio = () => {
-    if (!audioRef.current) return;
-    audioRef.current.pause();
-    audioRef.current.src = ""; // release network connection
-    setIsPlaying(false);
-    setIsLoading(false);
-  };
+  }, [playAudio, pauseAudio, updateMediaSessionMetadata]);
 
   const togglePlay = () => {
     if (isPlaying) {

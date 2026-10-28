@@ -1,6 +1,12 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AudioProvider } from "@/context/AudioContext";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#061833",
+};
 
 export const metadata: Metadata = {
   title: "Galaxia 21 HRNS 95.1 FM — La Radio de Lempira",
@@ -14,11 +20,23 @@ export const metadata: Metadata = {
     "Radio en vivo Honduras",
     "Radio Lempira",
   ],
+  manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/logo-galaxia-hd.png", type: "image/png" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: "/icon-192.png",
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
   openGraph: {
     title: "Galaxia 21 HRNS 95.1 FM — La Radio de Lempira",
     description:
       "Transmitiendo la mejor música y noticias desde Gracias, Lempira para todo el mundo.",
-    images: ["/logo-galaxia-hd.png"],
+    images: ["/icon-512.png"],
   },
 };
 
