@@ -23,11 +23,11 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: [
-      { url: "/logo-galaxia-hd.png", type: "image/png" },
+      { url: "/favicon-white.png", sizes: "192x192", type: "image/png" },
       { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
       { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
-    shortcut: "/icon-192.png",
+    shortcut: "/favicon-white.png",
     apple: [
       { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     title: "Galaxia 21 HRNS 95.1 FM — La Radio de Lempira",
     description:
       "Transmitiendo la mejor música y noticias desde Gracias, Lempira para todo el mundo.",
-    images: ["/icon-512.png"],
+    images: ["/lockscreen-cover.png"],
   },
 };
 

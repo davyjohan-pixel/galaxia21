@@ -4,20 +4,20 @@
   "description": "La Radio de Lempira — Transmitiendo en vivo desde Gracias, Lempira por 95.1 FM",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#061833",
-  "theme_color": "#061833",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/favicon-white.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }

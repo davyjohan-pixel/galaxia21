@@ -38,18 +38,18 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
         album: "Gracias, Lempira • HRNS",
         artwork: [
           {
-            src: `${origin}/icon-192.png`,
-            sizes: "192x192",
+            src: `${origin}/lockscreen-square.png`,
+            sizes: "800x800",
+            type: "image/png",
+          },
+          {
+            src: `${origin}/lockscreen-cover.png`,
+            sizes: "960x640",
             type: "image/png",
           },
           {
             src: `${origin}/icon-512.png`,
             sizes: "512x512",
-            type: "image/png",
-          },
-          {
-            src: `${origin}/logo-galaxia-hd.png`,
-            sizes: "1024x1024",
             type: "image/png",
           },
         ],
