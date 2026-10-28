@@ -14,6 +14,7 @@ interface AudioContextType {
   isLoading: boolean;
   isMuted: boolean;
   volume: number;
+  volumeSupported: boolean;
   togglePlay: () => void;
   playAudio: () => void;
   pauseAudio: () => void;
@@ -32,6 +33,7 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(0.9);
+  const [volumeSupported, setVolumeSupported] = useState(true);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const volumeRef = useRef(0.9);
@@ -155,6 +157,8 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
     setIsMuted(newMuted);
     isMutedRef.current = newMuted;
     if (audioRef.current) {
+      // `muted` works on iOS too, unlike `volume`
+      audioRef.current.muted = newMuted;
       try {
         audioRef.current.volume = newMuted ? 0 : volumeRef.current;
       } catch {
@@ -174,6 +178,15 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
     const audio = new Audio();
     audio.preload = "none";
     audioRef.current = audio;
+
+    // iOS Safari ignores programmatic volume (always stays at 1): detect it
+    try {
+      audio.volume = 0.5;
+      if (audio.volume !== 0.5) setVolumeSupported(false);
+      audio.volume = volumeRef.current;
+    } catch {
+      setVolumeSupported(false);
+    }
 
     const handleCanPlay = () => setIsLoading(false);
     const handleWaiting = () => setIsLoading(true);
@@ -233,6 +246,7 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
         isLoading,
         isMuted,
         volume,
+        volumeSupported,
         togglePlay,
         playAudio,
         pauseAudio,

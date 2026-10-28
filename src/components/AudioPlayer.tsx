@@ -10,6 +10,7 @@ export const AudioPlayer: React.FC = () => {
     isLoading,
     isMuted,
     volume,
+    volumeSupported,
     togglePlay,
     handleVolumeChange,
     toggleMute,
@@ -140,21 +141,27 @@ export const AudioPlayer: React.FC = () => {
                 )}
               </button>
 
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={currentVolume}
-                onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-                aria-label="Volumen"
-                className="volume-slider w-24 sm:w-36 h-1.5 rounded-full"
-                style={{
-                  background: `linear-gradient(to right, #facc15 0%, #facc15 ${
-                    currentVolume * 100
-                  }%, #e2e8f0 ${currentVolume * 100}%, #e2e8f0 100%)`,
-                }}
-              />
+              {volumeSupported ? (
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={currentVolume}
+                  onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                  aria-label="Volumen"
+                  className="volume-slider w-24 sm:w-36 h-1.5 rounded-full"
+                  style={{
+                    background: `linear-gradient(to right, #facc15 0%, #facc15 ${
+                      currentVolume * 100
+                    }%, #e2e8f0 ${currentVolume * 100}%, #e2e8f0 100%)`,
+                  }}
+                />
+              ) : (
+                <span className="text-[11px] text-slate-500 font-medium max-w-[120px] leading-tight">
+                  Usa los botones de volumen de tu teléfono
+                </span>
+              )}
             </div>
           </div>
         </div>
