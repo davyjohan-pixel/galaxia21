@@ -80,7 +80,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onRequestSong }) => {
           </button>
           <button
             onClick={onRequestSong}
-            aria-label="Buscar o pedir canción"
+            aria-label="Contacto"
             className="text-[#081c38] hover:text-yellow-600 p-1 sm:p-1.5 transition-colors cursor-pointer"
           >
             <Search className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.4]" />
