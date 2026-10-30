@@ -64,20 +64,25 @@ export const AboutSection: React.FC = () => {
             veraz y el orgullo de nuestra tierra.
           </p>
 
-          {/* Expandable 30 Years Trajectory Box */}
-          {expanded && (
-            <div className="mt-4 pt-4 border-t border-slate-200/80 text-[#334155] text-sm sm:text-base leading-relaxed font-medium">
-              <p>
-                Con más de 30 años de trayectoria ininterrumpida,{" "}
-                <strong className="text-[#081c38]">Radio Galaxia 21</strong> es
-                la emisora referente del departamento de Lempira. A través de la
-                frecuencia <strong className="text-[#081c38]">95.1 FM</strong>,
-                hemos consolidado un espacio de comunicación que trasciende el
-                entretenimiento para convertirse en un verdadero pilar
-                institucional y social de nuestra comunidad.
-              </p>
-            </div>
-          )}
+          {/* Expandable 30 Years Trajectory Box (Always in DOM for Google SEO indexing) */}
+          <div
+            className={
+              expanded
+                ? "mt-4 pt-4 border-t border-slate-200/80 text-[#334155] text-sm sm:text-base leading-relaxed font-medium"
+                : "sr-only"
+            }
+          >
+            <p>
+              Con más de 30 años de trayectoria ininterrumpida,{" "}
+              <strong className="text-[#081c38]">Radio Galaxia 21</strong> es
+              la emisora de radio referente de Gracias y del departamento de
+              Lempira. A través de la frecuencia{" "}
+              <strong className="text-[#081c38]">95.1 FM (HRNS)</strong>,
+              hemos consolidado un espacio de comunicación que trasciende el
+              entretenimiento para convertirse en un verdadero pilar
+              institucional y social de nuestra comunidad.
+            </p>
+          </div>
 
           <div className="mt-5 sm:mt-6">
             <button
