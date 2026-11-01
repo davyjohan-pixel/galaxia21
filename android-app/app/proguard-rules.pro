@@ -1,0 +1,2 @@
+-keep class hn.galaxia21.radio.** { *; }
+-dontwarn androidx.media3.**
