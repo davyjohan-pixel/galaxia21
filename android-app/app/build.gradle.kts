@@ -12,8 +12,9 @@ android {
         applicationId = "hn.galaxia21.radio"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        val runNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
+        versionCode = runNumber + 1
+        versionName = "1.1.$runNumber"
     }
 
     signingConfigs {

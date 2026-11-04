@@ -1,19 +1,31 @@
 package hn.galaxia21.radio
 
+import android.Manifest
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.database.ContentObserver
 import android.media.AudioManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,27 +42,39 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
-import kotlinx.coroutines.delay
 
 val NavyDark = Color(0xFF061833)
+val NavyCardDark = Color(0xFF0F2547)
 val NavyText = Color(0xFF081C38)
 val BrandYellow = Color(0xFFFACC15)
 val LightBg = Color(0xFFF8FAFC)
+val DarkBg = Color(0xFF041022)
 val WhatsAppGreen = Color(0xFF25D366)
+val FacebookBlue = Color(0xFF1877F2)
+
+const val FACEBOOK_URL = "https://www.facebook.com/radiogalaxia21/?locale=es_LA"
+const val WHATSAPP_URL = "https://wa.me/50495107057?text=Hola%20Radio%20Galaxia%2021%20(95.1%20FM)%2C%20me%20gustar%C3%ADa%20ponerme%20en%20contacto%20con%20ustedes."
+const val PRIVACY_URL = "https://galaxia21.vercel.app/privacidad"
+const val WEB_URL = "https://galaxia21.vercel.app"
 
 class MainActivity : ComponentActivity() {
 
@@ -59,6 +83,24 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Match status bar with brand navy
+        window.statusBarColor = android.graphics.Color.parseColor("#061833")
+
+        // Request POST_NOTIFICATIONS on Android 13+ so media controls show on lockscreen
+        if (Build.VERSION.SDK_INT >= 33) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    1001
+                )
+            }
+        }
 
         val sessionToken = SessionToken(
             this,
@@ -100,11 +142,25 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
     var isBuffering by remember { mutableStateOf(false) }
     var showContactDialog by remember { mutableStateOf(false) }
     var expandHistory by remember { mutableStateOf(false) }
+    var isDarkMode by remember { mutableStateOf(false) }
 
-    // Sleep timer state (in remaining seconds, 0 = off)
-    var sleepTimerSeconds by remember { mutableStateOf(0) }
+    // Observe service-level states (Sleep Timer, Auto-Reconnect, Live Stream Metadata)
+    val sleepTimerSeconds by RadioPlaybackService.sleepTimerSeconds.collectAsState()
+    val isReconnecting by RadioPlaybackService.isReconnecting.collectAsState()
+    val streamError by RadioPlaybackService.streamError.collectAsState()
+    val liveMetadataTitle by RadioPlaybackService.liveMetadataTitle.collectAsState()
 
-    // Real hardware volume state
+    // Theme dynamic colors
+    val bgColor by animateColorAsState(if (isDarkMode) DarkBg else LightBg, label = "bg")
+    val cardColor by animateColorAsState(if (isDarkMode) NavyCardDark else Color.White, label = "card")
+    val headerColor by animateColorAsState(if (isDarkMode) NavyDark else Color.White, label = "header")
+    val primaryTextColor by animateColorAsState(if (isDarkMode) Color.White else NavyText, label = "txt1")
+    val secondaryTextColor by animateColorAsState(
+        if (isDarkMode) Color(0xFFCBD5E1) else Color(0xFF334155),
+        label = "txt2"
+    )
+
+    // Real hardware volume state synced with physical volume buttons
     val maxVolume = remember {
         audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC).coerceAtLeast(1)
     }
@@ -112,6 +168,23 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
         mutableStateOf(
             audioManager.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat() / maxVolume.toFloat()
         )
+    }
+
+    DisposableEffect(context) {
+        val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
+            override fun onChange(selfChange: Boolean) {
+                val vol = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+                currentVolume = vol.toFloat() / maxVolume.toFloat()
+            }
+        }
+        context.contentResolver.registerContentObserver(
+            Settings.System.CONTENT_URI,
+            true,
+            observer
+        )
+        onDispose {
+            context.contentResolver.unregisterContentObserver(observer)
+        }
     }
 
     DisposableEffect(mediaController) {
@@ -134,73 +207,88 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
         }
     }
 
-    // Countdown coroutine for Sleep Timer
-    LaunchedEffect(sleepTimerSeconds) {
-        if (sleepTimerSeconds > 0) {
-            delay(1000L)
-            sleepTimerSeconds -= 1
-            if (sleepTimerSeconds == 0) {
-                mediaController?.pause()
-            }
-        }
-    }
-
     val togglePlay = {
         mediaController?.let { controller ->
             if (controller.isPlaying) {
                 controller.pause()
             } else {
-                if (controller.playbackState == Player.STATE_IDLE || controller.playbackState == Player.STATE_ENDED) {
-                    controller.prepare()
-                }
-                controller.play()
+                RadioPlaybackService.manualRetry(controller)
             }
         }
+    }
+
+    val shareRadio = {
+        val sendIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(
+                Intent.EXTRA_TEXT,
+                "📻 Escucha Radio Galaxia 21 HRNS (95.1 FM) — La Radio de Lempira en vivo desde Gracias, Lempira: $WEB_URL"
+            )
+        }
+        context.startActivity(Intent.createChooser(sendIntent, "Compartir Radio Galaxia 21"))
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(LightBg)
+            .background(bgColor)
             .verticalScroll(rememberScrollState())
     ) {
-        // 1. Top White Header Bar
+        // 1. Top Header Bar with Night Mode Toggle & Contact Button
         Surface(
-            color = Color.White,
+            color = headerColor,
             shadowElevation = 4.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Image(
                         painter = painterResource(id = R.drawable.logo_galaxia),
-                        contentDescription = "Galaxia 21 HRNS",
-                        modifier = Modifier.size(54.dp)
+                        contentDescription = "Logo Galaxia 21 HRNS",
+                        modifier = Modifier.size(50.dp)
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(
                             text = "GALAXIA 21",
-                            color = NavyText,
-                            fontSize = 20.sp,
+                            color = primaryTextColor,
+                            fontSize = 19.sp,
                             fontWeight = FontWeight.Black
                         )
                         Text(
                             text = "La Radio de Lempira",
-                            color = Color(0xFF1E3A5F),
+                            color = if (isDarkMode) BrandYellow else Color(0xFF1E3A5F),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
                 }
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    IconButton(
+                        onClick = { isDarkMode = !isDarkMode },
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(if (isDarkMode) NavyCardDark else Color(0xFFF1F5F9))
+                    ) {
+                        Icon(
+                            imageVector = if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
+                            contentDescription = if (isDarkMode) "Cambiar a modo claro" else "Cambiar a modo oscuro",
+                            tint = if (isDarkMode) BrandYellow else NavyText,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
                     Button(
                         onClick = { showContactDialog = true },
                         colors = ButtonDefaults.buttonColors(
@@ -224,7 +312,7 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(270.dp)
+                .height(265.dp)
         ) {
             Image(
                 painter = painterResource(id = R.drawable.hero_gracias),
@@ -239,9 +327,9 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
                     .background(
                         Brush.horizontalGradient(
                             colors = listOf(
-                                NavyDark.copy(alpha = 0.92f),
-                                NavyDark.copy(alpha = 0.65f),
-                                Color.Transparent
+                                NavyDark.copy(alpha = 0.94f),
+                                NavyDark.copy(alpha = 0.70f),
+                                NavyDark.copy(alpha = 0.25f)
                             )
                         )
                     )
@@ -250,7 +338,7 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 20.dp, vertical = 22.dp),
+                    .padding(horizontal = 20.dp, vertical = 20.dp),
                 verticalArrangement = Arrangement.Center
             ) {
                 Box(
@@ -292,10 +380,10 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "95.1 FM",
+                            text = "95.1 FM • HRNS",
                             color = NavyText,
                             fontWeight = FontWeight.Black,
-                            fontSize = 18.sp
+                            fontSize = 17.sp
                         )
                     }
                 }
@@ -316,17 +404,71 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
             }
         }
 
-        // 3. Floating Live Audio Player Card with Real Hardware Volume & Sleep Timer
+        // 3. Floating Live Audio Player Card
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
-                .offset(y = (-18).dp),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                .offset(y = (-20).dp),
+            shape = RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(containerColor = cardColor),
+            elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
         ) {
             Column(modifier = Modifier.padding(18.dp)) {
+                // Connection Error / Auto-Reconnect Alert Banner
+                AnimatedVisibility(
+                    visible = streamError != null,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    Surface(
+                        color = Color(0xFFFEF2F2),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.WifiOff,
+                                    contentDescription = null,
+                                    tint = Color(0xFFDC2626),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = streamError ?: "",
+                                    color = Color(0xFF991B1B),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                            if (!isReconnecting) {
+                                TextButton(
+                                    onClick = { RadioPlaybackService.manualRetry(mediaController) }
+                                ) {
+                                    Text(
+                                        text = "Reintentar",
+                                        color = Color(0xFFDC2626),
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -336,48 +478,34 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(62.dp)
-                                .clip(CircleShape)
-                                .background(BrandYellow)
-                                .clickable { togglePlay() },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (isBuffering) {
-                                CircularProgressIndicator(
-                                    color = NavyText,
-                                    strokeWidth = 3.dp,
-                                    modifier = Modifier.size(26.dp)
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                    contentDescription = if (isPlaying) "Pausar" else "Reproducir",
-                                    tint = NavyText,
-                                    modifier = Modifier.size(34.dp)
-                                )
-                            }
-                        }
+                        PulsingPlayButton(
+                            isPlaying = isPlaying,
+                            isBuffering = isBuffering || isReconnecting,
+                            onClick = togglePlay
+                        )
                         Spacer(modifier = Modifier.width(14.dp))
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Escúchanos en vivo",
-                                color = NavyText,
+                                text = if (isPlaying) "Escuchando en vivo" else "Escúchanos en vivo",
+                                color = primaryTextColor,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.ExtraBold
                             )
                             Text(
-                                text = "Radio Galaxia 21 HRNS | 95.1 FM",
-                                color = Color(0xFF64748B),
+                                text = liveMetadataTitle,
+                                color = secondaryTextColor,
                                 fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
 
+                    Spacer(modifier = Modifier.width(8.dp))
+
                     Surface(
-                        color = NavyText,
+                        color = if (isPlaying) Color(0xFF065F46) else NavyDark,
                         shape = RoundedCornerShape(50)
                     ) {
                         Row(
@@ -388,11 +516,13 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
                                 modifier = Modifier
                                     .size(8.dp)
                                     .clip(CircleShape)
-                                    .background(Color(0xFF34D399))
+                                    .background(
+                                        if (isPlaying) Color(0xFF34D399) else BrandYellow
+                                    )
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "En vivo",
+                                text = if (isPlaying) "EN AIRE" else "En vivo",
                                 color = Color.White,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
@@ -410,13 +540,26 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
                 ) {
                     AnimatedSoundBars(isPlaying = isPlaying)
                     Spacer(modifier = Modifier.width(14.dp))
-                    Icon(
-                        imageVector = if (currentVolume == 0f) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
-                        contentDescription = "Volumen",
-                        tint = NavyText,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    IconButton(
+                        onClick = {
+                            val newVol = if (currentVolume > 0f) 0f else 0.7f
+                            currentVolume = newVol
+                            audioManager.setStreamVolume(
+                                AudioManager.STREAM_MUSIC,
+                                (newVol * maxVolume).toInt(),
+                                0
+                            )
+                        },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (currentVolume == 0f) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
+                            contentDescription = "Silenciar o activar volumen",
+                            tint = primaryTextColor,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(6.dp))
                     Slider(
                         value = currentVolume,
                         onValueChange = { newVal ->
@@ -431,15 +574,19 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
                         colors = SliderDefaults.colors(
                             thumbColor = BrandYellow,
                             activeTrackColor = BrandYellow,
-                            inactiveTrackColor = Color(0xFFE2E8F0)
+                            inactiveTrackColor = if (isDarkMode) Color(0xFF1E3A5F) else Color(0xFFE2E8F0)
                         ),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier
+                            .weight(1f)
+                            .semantics {
+                                contentDescription = "Control de volumen de la radio"
+                            }
                     )
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Sleep Timer Selector Row
+                // Service-Backed Sleep Timer Selector Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -448,8 +595,8 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.Timer,
-                            contentDescription = "Temporizador",
-                            tint = Color(0xFF64748B),
+                            contentDescription = null,
+                            tint = if (sleepTimerSeconds > 0) BrandYellow else secondaryTextColor,
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
@@ -457,9 +604,9 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
                             text = if (sleepTimerSeconds > 0) {
                                 "Apagar en ${sleepTimerSeconds / 60}m ${sleepTimerSeconds % 60}s"
                             } else {
-                                "Temporizador:"
+                                "Apagado auto:"
                             },
-                            color = Color(0xFF475569),
+                            color = primaryTextColor,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -470,21 +617,120 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
                             val isSelected = (mins == 0 && sleepTimerSeconds == 0) ||
                                 (mins > 0 && sleepTimerSeconds in ((mins - 1) * 60 + 1)..(mins * 60))
                             Surface(
-                                color = if (isSelected) BrandYellow else Color(0xFFF1F5F9),
+                                color = if (isSelected) {
+                                    BrandYellow
+                                } else if (isDarkMode) {
+                                    Color(0xFF1E3A5F)
+                                } else {
+                                    Color(0xFFF1F5F9)
+                                },
                                 shape = RoundedCornerShape(8.dp),
                                 modifier = Modifier.clickable {
-                                    sleepTimerSeconds = mins * 60
+                                    RadioPlaybackService.setSleepTimerMinutes(mins)
                                 }
                             ) {
                                 Text(
                                     text = label,
-                                    color = NavyText,
+                                    color = if (isSelected) NavyText else primaryTextColor,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
                                 )
                             }
                         }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+                HorizontalDivider(
+                    color = if (isDarkMode) Color(0xFF1E3A5F) else Color(0xFFE2E8F0)
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Quick Social & Share Action Row (Facebook Oficial, WhatsApp, Compartir)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Official Facebook Button
+                    Button(
+                        onClick = {
+                            context.startActivity(
+                                Intent(Intent.ACTION_VIEW, Uri.parse(FACEBOOK_URL))
+                            )
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = FacebookBlue,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 10.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ThumbUp,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Facebook",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            maxLines = 1
+                        )
+                    }
+
+                    // Official WhatsApp Button
+                    Button(
+                        onClick = {
+                            context.startActivity(
+                                Intent(Intent.ACTION_VIEW, Uri.parse(WHATSAPP_URL))
+                            )
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = WhatsAppGreen,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 10.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Chat,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "WhatsApp",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            maxLines = 1
+                        )
+                    }
+
+                    // Share App / Station Button
+                    OutlinedButton(
+                        onClick = shareRadio,
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 10.dp),
+                        modifier = Modifier.weight(0.9f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = null,
+                            tint = primaryTextColor,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text(
+                            text = "Compartir",
+                            color = primaryTextColor,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            maxLines = 1
+                        )
                     }
                 }
             }
@@ -494,9 +740,9 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp),
+                .padding(horizontal = 16.dp, vertical = 4.dp),
             shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = cardColor),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Column {
@@ -512,7 +758,7 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
                         modifier = Modifier.fillMaxSize()
                     )
                     Surface(
-                        color = NavyDark.copy(alpha = 0.90f),
+                        color = NavyDark.copy(alpha = 0.92f),
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
                             .align(Alignment.BottomStart)
@@ -557,26 +803,32 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "Nuestra Tierra",
-                        color = NavyText,
+                        color = primaryTextColor,
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Black
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "Gracias, Lempira, un lugar lleno de historia, tradición y gente de gran corazón. Desde aquí llevamos la mejor música, la información veraz y el orgullo de nuestra tierra.",
-                        color = Color(0xFF334155),
+                        color = secondaryTextColor,
                         fontSize = 14.sp,
                         lineHeight = 20.sp
                     )
 
-                    AnimatedVisibility(visible = expandHistory) {
+                    AnimatedVisibility(
+                        visible = expandHistory,
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
+                    ) {
                         Column {
                             Spacer(modifier = Modifier.height(10.dp))
-                            HorizontalDivider(color = Color(0xFFE2E8F0))
+                            HorizontalDivider(
+                                color = if (isDarkMode) Color(0xFF1E3A5F) else Color(0xFFE2E8F0)
+                            )
                             Spacer(modifier = Modifier.height(10.dp))
                             Text(
                                 text = "Con más de 30 años de trayectoria ininterrumpida, Radio Galaxia 21 es la emisora referente del departamento de Lempira. A través de la frecuencia 95.1 FM, hemos consolidado un espacio de comunicación que trasciende el entretenimiento para convertirse en un verdadero pilar institucional y social de nuestra comunidad.",
-                                color = Color(0xFF334155),
+                                color = secondaryTextColor,
                                 fontSize = 14.sp,
                                 lineHeight = 20.sp
                             )
@@ -594,8 +846,8 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = if (expandHistory) "Mostrar menos" else "Conoce más sobre nosotros →",
-                            color = NavyText,
+                            text = if (expandHistory) "Mostrar menos ↑" else "Conoce más sobre nosotros →",
+                            color = primaryTextColor,
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp
                         )
@@ -604,9 +856,9 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
             }
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        // 5. Dark Navy Footer
+        // 5. Dark Navy Footer with Official Links
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -618,7 +870,7 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
                 Image(
                     painter = painterResource(id = R.drawable.logo_galaxia),
                     contentDescription = "Galaxia 21",
-                    modifier = Modifier.size(56.dp)
+                    modifier = Modifier.size(54.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
@@ -637,29 +889,35 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
             Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Contacto Oficial",
+                    text = "Facebook Oficial",
                     color = BrandYellow,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(FACEBOOK_URL)))
+                    }
+                )
+                Text(text = "•", color = Color.White.copy(alpha = 0.5f))
+                Text(
+                    text = "Contacto",
+                    color = Color.White,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.clickable { showContactDialog = true }
                 )
                 Text(text = "•", color = Color.White.copy(alpha = 0.5f))
                 Text(
-                    text = "Política de Privacidad",
-                    color = Color.White.copy(alpha = 0.8f),
+                    text = "Privacidad",
+                    color = Color.White.copy(alpha = 0.85f),
                     fontSize = 12.sp,
                     modifier = Modifier.clickable {
-                        val intent = Intent(
-                            Intent.ACTION_VIEW,
-                            Uri.parse("https://galaxia21.vercel.app/privacidad")
-                        )
-                        context.startActivity(intent)
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_URL)))
                     }
                 )
             }
@@ -687,14 +945,14 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
                     )
                     Text(
                         text = "Radio Galaxia 21 HRNS • 95.1 FM",
-                        color = Color(0xFF64748B),
+                        color = Color(0xFF334155),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Surface(
                         color = Color(0xFFF8FAFC),
                         shape = RoundedCornerShape(12.dp),
@@ -703,7 +961,7 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text(
                                 text = "NOMBRE LEGAL / RAZÓN SOCIAL",
-                                color = Color(0xFF64748B),
+                                color = Color(0xFF475569),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -715,7 +973,7 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
                             )
                             Text(
                                 text = "Gracias, Lempira, Honduras",
-                                color = Color(0xFF64748B),
+                                color = Color(0xFF334155),
                                 fontSize = 12.sp
                             )
                         }
@@ -737,7 +995,7 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text(
                                 text = "CORREO ELECTRÓNICO",
-                                color = Color(0xFF64748B),
+                                color = Color(0xFF475569),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -752,10 +1010,7 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
 
                     Button(
                         onClick = {
-                            val waUri = Uri.parse(
-                                "https://wa.me/50495107057?text=Hola%20Radio%20Galaxia%2021%20(95.1%20FM)%2C%20me%20gustar%C3%ADa%20ponerme%20en%20contacto%20con%20ustedes."
-                            )
-                            context.startActivity(Intent(Intent.ACTION_VIEW, waUri))
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(WHATSAPP_URL)))
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = WhatsAppGreen,
@@ -771,6 +1026,25 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
                     }
+
+                    Button(
+                        onClick = {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(FACEBOOK_URL)))
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = FacebookBlue,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "Síguenos en Facebook Oficial",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                    }
                 }
             },
             confirmButton = {
@@ -779,6 +1053,63 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
                 }
             }
         )
+    }
+}
+
+@Composable
+fun PulsingPlayButton(
+    isPlaying: Boolean,
+    isBuffering: Boolean,
+    onClick: () -> Unit
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = if (isPlaying) 1.14f else 1.0f,
+        animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
+        label = "pulseScale"
+    )
+
+    Box(contentAlignment = Alignment.Center) {
+        if (isPlaying) {
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .scale(pulseScale)
+                    .clip(CircleShape)
+                    .background(BrandYellow.copy(alpha = 0.28f))
+            )
+        }
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .clip(CircleShape)
+                .background(BrandYellow)
+                .clickable { onClick() }
+                .semantics {
+                    contentDescription = if (isPlaying) {
+                        "Pausar transmisión en vivo de Radio Galaxia 21"
+                    } else {
+                        "Reproducir transmisión en vivo de Radio Galaxia 21"
+                    }
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            if (isBuffering) {
+                CircularProgressIndicator(
+                    color = NavyText,
+                    strokeWidth = 3.dp,
+                    modifier = Modifier.size(28.dp)
+                )
+            } else {
+                Icon(
+                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    tint = NavyText,
+                    modifier = Modifier.size(36.dp)
+                )
+            }
+        }
     }
 }
 
@@ -813,7 +1144,7 @@ fun AnimatedSoundBars(isPlaying: Boolean) {
         modifier = Modifier.height(32.dp)
     ) {
         heights.forEachIndexed { idx, baseH ->
-            val factor = if (isPlaying) scales[idx] else 0.4f
+            val factor = if (isPlaying) scales[idx] else 0.35f
             Box(
                 modifier = Modifier
                     .width(4.dp)

@@ -127,6 +127,7 @@ const radioStationJsonLd = {
     "@type": "AdministrativeArea",
     name: "Gracias, Lempira, Honduras",
   },
+  sameAs: ["https://www.facebook.com/radiogalaxia21/"],
 };
 
 export default function RootLayout({

@@ -8,6 +8,9 @@ on:
       - '.github/workflows/build-android.yml'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-android:
     name: Generar AAB para Play Store y APK
@@ -34,7 +37,7 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Generar Keystore de Firma Oficial (Inversiones Lempira)
+      - name: Asegurar Keystore Permanente de Firma Oficial (Inversiones Lempira)
         working-directory: android-app
         run: |
           if [ ! -f "galaxia21-release.jks" ]; then
@@ -47,6 +50,11 @@ jobs:
               -storepass galaxia21hrns \
               -keypass galaxia21hrns \
               -dname "CN=Radio Galaxia 21 HRNS, OU=Radiodifusion, O=Inversiones Lempira, L=Gracias, ST=Lempira, C=HN"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add galaxia21-release.jks
+            git commit -m "chore(android): persist official release keystore for Play Store updates [skip ci]" || true
+            git push origin HEAD:main || true
           fi
 
       - name: Compilar Android App Bundle (.aab) y APK (.apk) de Produccion
