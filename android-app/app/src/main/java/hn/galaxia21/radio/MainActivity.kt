@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -84,8 +85,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Match status bar with brand navy
+        // Ensure white clock/signal/battery icons over our dark navy top bar & dark bottom nav bar
         window.statusBarColor = android.graphics.Color.parseColor("#061833")
+        window.navigationBarColor = android.graphics.Color.parseColor("#061833")
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = false
+            isAppearanceLightNavigationBars = false
+        }
 
         // Request POST_NOTIFICATIONS on Android 13+ so media controls show on lockscreen
         if (Build.VERSION.SDK_INT >= 33) {
@@ -126,6 +132,9 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        if (isFinishing && !isChangingConfigurations) {
+            RadioPlaybackService.stopPlaybackAndService()
+        }
         controllerFuture?.let { MediaController.releaseFuture(it) }
         super.onDestroy()
     }
@@ -228,13 +237,21 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
         context.startActivity(Intent.createChooser(sendIntent, "Compartir Radio Galaxia 21"))
     }
 
+    // Outer container protects top status bar / camera cutout and bottom 3-button navigation bar
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(bgColor)
-            .verticalScroll(rememberScrollState())
+            .background(NavyDark)
     ) {
-        // 1. Top Header Bar with Night Mode Toggle & Contact Button
+        // Top System Status Bar & Camera Cutout Spacer (solid NavyDark background for clock, signal & battery)
+        Spacer(
+            modifier = Modifier
+                .fillMaxWidth()
+                .windowInsetsTopHeight(WindowInsets.statusBars.union(WindowInsets.displayCutout))
+                .background(NavyDark)
+        )
+
+        // 1. Fixed Top Header Bar (completely below camera notch & battery)
         Surface(
             color = headerColor,
             shadowElevation = 4.dp,
@@ -247,25 +264,30 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
                     Image(
                         painter = painterResource(id = R.drawable.logo_galaxia),
                         contentDescription = "Logo Galaxia 21 HRNS",
-                        modifier = Modifier.size(50.dp)
+                        modifier = Modifier.size(46.dp)
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(
                             text = "GALAXIA 21",
                             color = primaryTextColor,
-                            fontSize = 19.sp,
-                            fontWeight = FontWeight.Black
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Black,
+                            maxLines = 1
                         )
                         Text(
                             text = "La Radio de Lempira",
                             color = if (isDarkMode) BrandYellow else Color(0xFF1E3A5F),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1
                         )
                     }
                 }
@@ -308,625 +330,642 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
             }
         }
 
-        // 2. Hero Banner with Aerial Photo of Gracias, Lempira
-        Box(
+        // Scrollable Body Area (between Top Header and Bottom System Navigation Bar)
+        Column(
             modifier = Modifier
+                .weight(1f)
                 .fillMaxWidth()
-                .height(265.dp)
+                .background(bgColor)
+                .verticalScroll(rememberScrollState())
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.hero_gracias),
-                contentDescription = "Vista aérea de Gracias, Lempira",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-
+            // 2. Hero Banner with Aerial Photo of Gracias, Lempira
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.horizontalGradient(
-                            colors = listOf(
-                                NavyDark.copy(alpha = 0.94f),
-                                NavyDark.copy(alpha = 0.70f),
-                                NavyDark.copy(alpha = 0.25f)
-                            )
-                        )
-                    )
-            )
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 20.dp, vertical = 20.dp),
-                verticalArrangement = Arrangement.Center
+                    .fillMaxWidth()
+                    .height(255.dp)
             ) {
+                Image(
+                    painter = painterResource(id = R.drawable.hero_gracias),
+                    contentDescription = "Vista aérea de Gracias, Lempira",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+
                 Box(
                     modifier = Modifier
-                        .width(44.dp)
-                        .height(5.dp)
-                        .clip(RoundedCornerShape(50))
-                        .background(BrandYellow)
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                Row {
-                    Text(
-                        text = "GALAXIA ",
-                        color = Color.White,
-                        fontSize = 34.sp,
-                        fontWeight = FontWeight.Black
-                    )
-                    Text(
-                        text = "21",
-                        color = BrandYellow,
-                        fontSize = 34.sp,
-                        fontWeight = FontWeight.Black
-                    )
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Surface(
-                    color = BrandYellow,
-                    shape = RoundedCornerShape(50)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Radio,
-                            contentDescription = null,
-                            tint = NavyText,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "95.1 FM • HRNS",
-                            color = NavyText,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 17.sp
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = "La Radio de Lempira",
-                    color = Color.White,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Música, información y la mejor compañía, siempre.",
-                    color = Color.White.copy(alpha = 0.92f),
-                    fontSize = 13.sp,
-                    fontStyle = FontStyle.Italic
-                )
-            }
-        }
-
-        // 3. Floating Live Audio Player Card
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .offset(y = (-20).dp),
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(containerColor = cardColor),
-            elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
-        ) {
-            Column(modifier = Modifier.padding(18.dp)) {
-                // Connection Error / Auto-Reconnect Alert Banner
-                AnimatedVisibility(
-                    visible = streamError != null,
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically()
-                ) {
-                    Surface(
-                        color = Color(0xFFFEF2F2),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 12.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.WifiOff,
-                                    contentDescription = null,
-                                    tint = Color(0xFFDC2626),
-                                    modifier = Modifier.size(18.dp)
+                        .fillMaxSize()
+                        .background(
+                            Brush.horizontalGradient(
+                                colors = listOf(
+                                    NavyDark.copy(alpha = 0.94f),
+                                    NavyDark.copy(alpha = 0.70f),
+                                    NavyDark.copy(alpha = 0.25f)
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = streamError ?: "",
-                                    color = Color(0xFF991B1B),
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                            if (!isReconnecting) {
-                                TextButton(
-                                    onClick = { RadioPlaybackService.manualRetry(mediaController) }
-                                ) {
-                                    Text(
-                                        text = "Reintentar",
-                                        color = Color(0xFFDC2626),
-                                        fontWeight = FontWeight.Black,
-                                        fontSize = 12.sp
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        PulsingPlayButton(
-                            isPlaying = isPlaying,
-                            isBuffering = isBuffering || isReconnecting,
-                            onClick = togglePlay
+                            )
                         )
-                        Spacer(modifier = Modifier.width(14.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = if (isPlaying) "Escuchando en vivo" else "Escúchanos en vivo",
-                                color = primaryTextColor,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.ExtraBold
-                            )
-                            Text(
-                                text = liveMetadataTitle,
-                                color = secondaryTextColor,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Surface(
-                        color = if (isPlaying) Color(0xFF065F46) else NavyDark,
-                        shape = RoundedCornerShape(50)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        if (isPlaying) Color(0xFF34D399) else BrandYellow
-                                    )
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = if (isPlaying) "EN AIRE" else "En vivo",
-                                color = Color.White,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Animated Waveform + Real Device Volume Control
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    AnimatedSoundBars(isPlaying = isPlaying)
-                    Spacer(modifier = Modifier.width(14.dp))
-                    IconButton(
-                        onClick = {
-                            val newVol = if (currentVolume > 0f) 0f else 0.7f
-                            currentVolume = newVol
-                            audioManager.setStreamVolume(
-                                AudioManager.STREAM_MUSIC,
-                                (newVol * maxVolume).toInt(),
-                                0
-                            )
-                        },
-                        modifier = Modifier.size(28.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (currentVolume == 0f) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
-                            contentDescription = "Silenciar o activar volumen",
-                            tint = primaryTextColor,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Slider(
-                        value = currentVolume,
-                        onValueChange = { newVal ->
-                            currentVolume = newVal
-                            val targetStep = (newVal * maxVolume).toInt()
-                            audioManager.setStreamVolume(
-                                AudioManager.STREAM_MUSIC,
-                                targetStep,
-                                0
-                            )
-                        },
-                        colors = SliderDefaults.colors(
-                            thumbColor = BrandYellow,
-                            activeTrackColor = BrandYellow,
-                            inactiveTrackColor = if (isDarkMode) Color(0xFF1E3A5F) else Color(0xFFE2E8F0)
-                        ),
-                        modifier = Modifier
-                            .weight(1f)
-                            .semantics {
-                                contentDescription = "Control de volumen de la radio"
-                            }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Service-Backed Sleep Timer Selector Row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Timer,
-                            contentDescription = null,
-                            tint = if (sleepTimerSeconds > 0) BrandYellow else secondaryTextColor,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = if (sleepTimerSeconds > 0) {
-                                "Apagar en ${sleepTimerSeconds / 60}m ${sleepTimerSeconds % 60}s"
-                            } else {
-                                "Apagado auto:"
-                            },
-                            color = primaryTextColor,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        listOf(0 to "Off", 15 to "15m", 30 to "30m", 60 to "60m").forEach { (mins, label) ->
-                            val isSelected = (mins == 0 && sleepTimerSeconds == 0) ||
-                                (mins > 0 && sleepTimerSeconds in ((mins - 1) * 60 + 1)..(mins * 60))
-                            Surface(
-                                color = if (isSelected) {
-                                    BrandYellow
-                                } else if (isDarkMode) {
-                                    Color(0xFF1E3A5F)
-                                } else {
-                                    Color(0xFFF1F5F9)
-                                },
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.clickable {
-                                    RadioPlaybackService.setSleepTimerMinutes(mins)
-                                }
-                            ) {
-                                Text(
-                                    text = label,
-                                    color = if (isSelected) NavyText else primaryTextColor,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-                HorizontalDivider(
-                    color = if (isDarkMode) Color(0xFF1E3A5F) else Color(0xFFE2E8F0)
                 )
-                Spacer(modifier = Modifier.height(12.dp))
 
-                // Quick Social & Share Action Row (Facebook Oficial, WhatsApp, Compartir)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // Official Facebook Button
-                    Button(
-                        onClick = {
-                            context.startActivity(
-                                Intent(Intent.ACTION_VIEW, Uri.parse(FACEBOOK_URL))
-                            )
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = FacebookBlue,
-                            contentColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 10.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ThumbUp,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Facebook",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
-                            maxLines = 1
-                        )
-                    }
-
-                    // Official WhatsApp Button
-                    Button(
-                        onClick = {
-                            context.startActivity(
-                                Intent(Intent.ACTION_VIEW, Uri.parse(WHATSAPP_URL))
-                            )
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = WhatsAppGreen,
-                            contentColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 10.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Chat,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "WhatsApp",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
-                            maxLines = 1
-                        )
-                    }
-
-                    // Share App / Station Button
-                    OutlinedButton(
-                        onClick = shareRadio,
-                        shape = RoundedCornerShape(12.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 10.dp),
-                        modifier = Modifier.weight(0.9f)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Share,
-                            contentDescription = null,
-                            tint = primaryTextColor,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(5.dp))
-                        Text(
-                            text = "Compartir",
-                            color = primaryTextColor,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
-                            maxLines = 1
-                        )
-                    }
-                }
-            }
-        }
-
-        // 4. "Nuestra Tierra" Card (Fuerte San Cristóbal & 30-Year History)
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = cardColor),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-        ) {
-            Column {
-                Box(
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(210.dp)
+                        .fillMaxSize()
+                        .padding(horizontal = 20.dp, vertical = 18.dp),
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.fuerte_san_cristobal),
-                        contentDescription = "Fuerte San Cristóbal - Gracias, Lempira",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                    Surface(
-                        color = NavyDark.copy(alpha = 0.92f),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(12.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.LocationOn,
-                                contentDescription = null,
-                                tint = BrandYellow,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Column {
-                                Text(
-                                    text = "Gracias, Lempira",
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp
-                                )
-                                Text(
-                                    text = "Tierra de historia, cultura y gente trabajadora.",
-                                    color = Color(0xFFE2E8F0),
-                                    fontSize = 10.sp
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Column(modifier = Modifier.padding(18.dp)) {
                     Box(
                         modifier = Modifier
-                            .width(36.dp)
-                            .height(4.dp)
+                            .width(44.dp)
+                            .height(5.dp)
                             .clip(RoundedCornerShape(50))
                             .background(BrandYellow)
                     )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row {
+                        Text(
+                            text = "GALAXIA ",
+                            color = Color.White,
+                            fontSize = 34.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                        Text(
+                            text = "21",
+                            color = BrandYellow,
+                            fontSize = 34.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
                     Spacer(modifier = Modifier.height(8.dp))
+                    Surface(
+                        color = BrandYellow,
+                        shape = RoundedCornerShape(50)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Radio,
+                                contentDescription = null,
+                                tint = NavyText,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "95.1 FM • HRNS",
+                                color = NavyText,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 17.sp
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = "Nuestra Tierra",
-                        color = primaryTextColor,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Black
+                        text = "La Radio de Lempira",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Gracias, Lempira, un lugar lleno de historia, tradición y gente de gran corazón. Desde aquí llevamos la mejor música, la información veraz y el orgullo de nuestra tierra.",
-                        color = secondaryTextColor,
-                        fontSize = 14.sp,
-                        lineHeight = 20.sp
+                        text = "Música, información y la mejor compañía, siempre.",
+                        color = Color.White.copy(alpha = 0.92f),
+                        fontSize = 13.sp,
+                        fontStyle = FontStyle.Italic
                     )
+                }
+            }
 
+            // 3. Floating Live Audio Player Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .offset(y = (-18).dp),
+                shape = RoundedCornerShape(22.dp),
+                colors = CardDefaults.cardColors(containerColor = cardColor),
+                elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
+            ) {
+                Column(modifier = Modifier.padding(18.dp)) {
+                    // Connection Error / Auto-Reconnect Alert Banner
                     AnimatedVisibility(
-                        visible = expandHistory,
+                        visible = streamError != null,
                         enter = fadeIn() + expandVertically(),
                         exit = fadeOut() + shrinkVertically()
                     ) {
-                        Column {
-                            Spacer(modifier = Modifier.height(10.dp))
-                            HorizontalDivider(
-                                color = if (isDarkMode) Color(0xFF1E3A5F) else Color(0xFFE2E8F0)
+                        Surface(
+                            color = Color(0xFFFEF2F2),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.WifiOff,
+                                        contentDescription = null,
+                                        tint = Color(0xFFDC2626),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = streamError ?: "",
+                                        color = Color(0xFF991B1B),
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                                if (!isReconnecting) {
+                                    TextButton(
+                                        onClick = { RadioPlaybackService.manualRetry(mediaController) }
+                                    ) {
+                                        Text(
+                                            text = "Reintentar",
+                                            color = Color(0xFFDC2626),
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 12.sp
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            PulsingPlayButton(
+                                isPlaying = isPlaying,
+                                isBuffering = isBuffering || isReconnecting,
+                                onClick = togglePlay
                             )
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Spacer(modifier = Modifier.width(14.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = if (isPlaying) "Escuchando en vivo" else "Escúchanos en vivo",
+                                    color = primaryTextColor,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.ExtraBold
+                                )
+                                Text(
+                                    text = liveMetadataTitle,
+                                    color = secondaryTextColor,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Surface(
+                            color = if (isPlaying) Color(0xFF065F46) else NavyDark,
+                            shape = RoundedCornerShape(50)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            if (isPlaying) Color(0xFF34D399) else BrandYellow
+                                        )
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (isPlaying) "EN AIRE" else "En vivo",
+                                    color = Color.White,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Animated Waveform + Real Device Volume Control
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        AnimatedSoundBars(isPlaying = isPlaying)
+                        Spacer(modifier = Modifier.width(14.dp))
+                        IconButton(
+                            onClick = {
+                                val newVol = if (currentVolume > 0f) 0f else 0.7f
+                                currentVolume = newVol
+                                audioManager.setStreamVolume(
+                                    AudioManager.STREAM_MUSIC,
+                                    (newVol * maxVolume).toInt(),
+                                    0
+                                )
+                            },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (currentVolume == 0f) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
+                                contentDescription = "Silenciar o activar volumen",
+                                tint = primaryTextColor,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Slider(
+                            value = currentVolume,
+                            onValueChange = { newVal ->
+                                currentVolume = newVal
+                                val targetStep = (newVal * maxVolume).toInt()
+                                audioManager.setStreamVolume(
+                                    AudioManager.STREAM_MUSIC,
+                                    targetStep,
+                                    0
+                                )
+                            },
+                            colors = SliderDefaults.colors(
+                                thumbColor = BrandYellow,
+                                activeTrackColor = BrandYellow,
+                                inactiveTrackColor = if (isDarkMode) Color(0xFF1E3A5F) else Color(0xFFE2E8F0)
+                            ),
+                            modifier = Modifier
+                                .weight(1f)
+                                .semantics {
+                                    contentDescription = "Control de volumen de la radio"
+                                }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Service-Backed Sleep Timer Selector Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Timer,
+                                contentDescription = null,
+                                tint = if (sleepTimerSeconds > 0) BrandYellow else secondaryTextColor,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Con más de 30 años de trayectoria ininterrumpida, Radio Galaxia 21 es la emisora referente del departamento de Lempira. A través de la frecuencia 95.1 FM, hemos consolidado un espacio de comunicación que trasciende el entretenimiento para convertirse en un verdadero pilar institucional y social de nuestra comunidad.",
-                                color = secondaryTextColor,
-                                fontSize = 14.sp,
-                                lineHeight = 20.sp
+                                text = if (sleepTimerSeconds > 0) {
+                                    "Apagar en ${sleepTimerSeconds / 60}m ${sleepTimerSeconds % 60}s"
+                                } else {
+                                    "Apagado auto:"
+                                },
+                                color = primaryTextColor,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
                             )
+                        }
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            listOf(0 to "Off", 15 to "15m", 30 to "30m", 60 to "60m").forEach { (mins, label) ->
+                                val isSelected = (mins == 0 && sleepTimerSeconds == 0) ||
+                                    (mins > 0 && sleepTimerSeconds in ((mins - 1) * 60 + 1)..(mins * 60))
+                                Surface(
+                                    color = if (isSelected) {
+                                        BrandYellow
+                                    } else if (isDarkMode) {
+                                        Color(0xFF1E3A5F)
+                                    } else {
+                                        Color(0xFFF1F5F9)
+                                    },
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.clickable {
+                                        RadioPlaybackService.setSleepTimerMinutes(mins)
+                                    }
+                                ) {
+                                    Text(
+                                        text = label,
+                                        color = if (isSelected) NavyText else primaryTextColor,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
+                                    )
+                                }
+                            }
                         }
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
+                    HorizontalDivider(
+                        color = if (isDarkMode) Color(0xFF1E3A5F) else Color(0xFFE2E8F0)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Quick Social & Share Action Row (Facebook Oficial, WhatsApp, Compartir)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        // Official Facebook Button
+                        Button(
+                            onClick = {
+                                context.startActivity(
+                                    Intent(Intent.ACTION_VIEW, Uri.parse(FACEBOOK_URL))
+                                )
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = FacebookBlue,
+                                contentColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 10.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ThumbUp,
+                                contentDescription = null,
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Facebook",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.5.sp,
+                                maxLines = 1
+                            )
+                        }
+
+                        // Official WhatsApp Button
+                        Button(
+                            onClick = {
+                                context.startActivity(
+                                    Intent(Intent.ACTION_VIEW, Uri.parse(WHATSAPP_URL))
+                                )
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = WhatsAppGreen,
+                                contentColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 10.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Chat,
+                                contentDescription = null,
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "WhatsApp",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.5.sp,
+                                maxLines = 1
+                            )
+                        }
+
+                        // Share App / Station Button
+                        OutlinedButton(
+                            onClick = shareRadio,
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 10.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = null,
+                                tint = primaryTextColor,
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Compartir",
+                                color = primaryTextColor,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.5.sp,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 4. "Nuestra Tierra" Card (Fuerte San Cristóbal & 30-Year History)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = cardColor),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(50))
-                            .border(2.dp, BrandYellow, RoundedCornerShape(50))
-                            .clickable { expandHistory = !expandHistory }
-                            .padding(vertical = 10.dp),
-                        contentAlignment = Alignment.Center
+                            .height(210.dp)
                     ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.fuerte_san_cristobal),
+                            contentDescription = "Fuerte San Cristóbal - Gracias, Lempira",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        Surface(
+                            color = NavyDark.copy(alpha = 0.92f),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .padding(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.LocationOn,
+                                    contentDescription = null,
+                                    tint = BrandYellow,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Column {
+                                    Text(
+                                        text = "Gracias, Lempira",
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp
+                                    )
+                                    Text(
+                                        text = "Tierra de historia, cultura y gente trabajadora.",
+                                        color = Color(0xFFE2E8F0),
+                                        fontSize = 10.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Column(modifier = Modifier.padding(18.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .width(36.dp)
+                                .height(4.dp)
+                                .clip(RoundedCornerShape(50))
+                                .background(BrandYellow)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = if (expandHistory) "Mostrar menos ↑" else "Conoce más sobre nosotros →",
+                            text = "Nuestra Tierra",
                             color = primaryTextColor,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Gracias, Lempira, un lugar lleno de historia, tradición y gente de gran corazón. Desde aquí llevamos la mejor música, la información veraz y el orgullo de nuestra tierra.",
+                            color = secondaryTextColor,
+                            fontSize = 14.sp,
+                            lineHeight = 20.sp
+                        )
+
+                        AnimatedVisibility(
+                            visible = expandHistory,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically()
+                        ) {
+                            Column {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                HorizontalDivider(
+                                    color = if (isDarkMode) Color(0xFF1E3A5F) else Color(0xFFE2E8F0)
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Text(
+                                    text = "Con más de 30 años de trayectoria ininterrumpida, Radio Galaxia 21 es la emisora referente del departamento de Lempira. A través de la frecuencia 95.1 FM, hemos consolidado un espacio de comunicación que trasciende el entretenimiento para convertirse en un verdadero pilar institucional y social de nuestra comunidad.",
+                                    color = secondaryTextColor,
+                                    fontSize = 14.sp,
+                                    lineHeight = 20.sp
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(50))
+                                .border(2.dp, BrandYellow, RoundedCornerShape(50))
+                                .clickable { expandHistory = !expandHistory }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (expandHistory) "Mostrar menos ↑" else "Conoce más sobre nosotros →",
+                                color = primaryTextColor,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 5. Dark Navy Footer with Official Links
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(NavyDark)
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Image(
+                        painter = painterResource(id = R.drawable.logo_galaxia),
+                        contentDescription = "Galaxia 21",
+                        modifier = Modifier.size(54.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "GALAXIA 21",
+                            color = Color.White,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 18.sp
+                        )
+                        Text(
+                            text = "La Radio de Lempira • 95.1 FM",
+                            color = BrandYellow,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
+                            fontSize = 12.sp
                         )
                     }
                 }
-            }
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 5. Dark Navy Footer with Official Links
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(NavyDark)
-                .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Image(
-                    painter = painterResource(id = R.drawable.logo_galaxia),
-                    contentDescription = "Galaxia 21",
-                    modifier = Modifier.size(54.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
+                Spacer(modifier = Modifier.height(14.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
-                        text = "GALAXIA 21",
-                        color = Color.White,
-                        fontWeight = FontWeight.Black,
-                        fontSize = 18.sp
-                    )
-                    Text(
-                        text = "La Radio de Lempira • 95.1 FM",
+                        text = "Facebook Oficial",
                         color = BrandYellow,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
+                        modifier = Modifier.clickable {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(FACEBOOK_URL)))
+                        }
+                    )
+                    Text(text = "•", color = Color.White.copy(alpha = 0.5f))
+                    Text(
+                        text = "Contacto",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clickable { showContactDialog = true }
+                    )
+                    Text(text = "•", color = Color.White.copy(alpha = 0.5f))
+                    Text(
+                        text = "Privacidad",
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 12.sp,
+                        modifier = Modifier.clickable {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_URL)))
+                        }
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.height(14.dp))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Facebook Oficial",
-                    color = BrandYellow,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(FACEBOOK_URL)))
-                    }
-                )
-                Text(text = "•", color = Color.White.copy(alpha = 0.5f))
-                Text(
-                    text = "Contacto",
-                    color = Color.White,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable { showContactDialog = true }
-                )
-                Text(text = "•", color = Color.White.copy(alpha = 0.5f))
-                Text(
-                    text = "Privacidad",
-                    color = Color.White.copy(alpha = 0.85f),
-                    fontSize = 12.sp,
-                    modifier = Modifier.clickable {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_URL)))
-                    }
-                )
-            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .background(BrandYellow)
+            )
         }
-        Box(
+
+        // Bottom System Navigation Bar Spacer (keeps content above the phone's 3 navigation buttons)
+        Spacer(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(8.dp)
-                .background(BrandYellow)
+                .windowInsetsBottomHeight(WindowInsets.navigationBars)
+                .background(NavyDark)
         )
     }
 

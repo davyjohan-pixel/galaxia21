@@ -66,10 +66,27 @@ class RadioPlaybackService : MediaSessionService() {
                 it.play()
             }
         }
+
+        fun stopPlaybackAndService() {
+            activeInstance?.shutdownService()
+        }
     }
 
     fun resetReconnectAttempts() {
         reconnectAttempts = 0
+    }
+
+    fun shutdownService() {
+        sleepTimerJob?.cancel()
+        reconnectJob?.cancel()
+        _sleepTimerSeconds.value = 0
+        _isReconnecting.value = false
+        mediaSession?.player?.let { player ->
+            player.playWhenReady = false
+            player.pause()
+            player.stop()
+        }
+        stopSelf()
     }
 
     override fun onCreate() {
@@ -195,10 +212,8 @@ class RadioPlaybackService : MediaSessionService() {
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        val player = mediaSession?.player
-        if (player == null || !player.playWhenReady || player.mediaItemCount == 0) {
-            stopSelf()
-        }
+        shutdownService()
+        super.onTaskRemoved(rootIntent)
     }
 
     override fun onDestroy() {
