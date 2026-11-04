@@ -49,7 +49,10 @@ class RadioPlaybackService : MediaSessionService() {
         private var activeInstance: RadioPlaybackService? = null
 
         fun setSleepTimerMinutes(minutes: Int) {
-            activeInstance?.startSleepTimer(minutes * 60) ?: run {
+            val instance = activeInstance
+            if (instance != null) {
+                instance.startSleepTimer(minutes * 60)
+            } else {
                 _sleepTimerSeconds.value = minutes * 60
             }
         }
@@ -57,12 +60,16 @@ class RadioPlaybackService : MediaSessionService() {
         fun manualRetry(player: Player?) {
             _streamError.value = null
             _isReconnecting.value = false
-            activeInstance?.reconnectAttempts = 0
+            activeInstance?.resetReconnectAttempts()
             player?.let {
                 it.prepare()
                 it.play()
             }
         }
+    }
+
+    fun resetReconnectAttempts() {
+        reconnectAttempts = 0
     }
 
     override fun onCreate() {

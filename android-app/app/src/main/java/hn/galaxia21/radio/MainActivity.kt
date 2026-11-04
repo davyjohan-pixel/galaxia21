@@ -207,7 +207,7 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
         }
     }
 
-    val togglePlay = {
+    val togglePlay: () -> Unit = {
         mediaController?.let { controller ->
             if (controller.isPlaying) {
                 controller.pause()
@@ -217,7 +217,7 @@ fun Galaxia21AppScreen(mediaController: MediaController?) {
         }
     }
 
-    val shareRadio = {
+    val shareRadio: () -> Unit = {
         val sendIntent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(
